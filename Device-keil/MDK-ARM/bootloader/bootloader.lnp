@@ -1,0 +1,20 @@
+--cpu=Cortex-M4.fp
+"bootloader\stm32f3xx_hal_can.o"
+"bootloader\stm32f3xx_hal.o"
+"bootloader\stm32f3xx_hal_gpio.o"
+"bootloader\stm32f3xx_hal_cortex.o"
+"bootloader\stm32f3xx_hal_flash_ex.o"
+"bootloader\stm32f3xx_hal_flash.o"
+"bootloader\stm32f3xx_hal_rcc.o"
+"bootloader\can_driver.o"
+"bootloader\device.o"
+"bootloader\flash.o"
+"bootloader\system_stm32f3xx.o"
+"bootloader\startup_stm32f302xc.o"
+"bootloader\stm32f3xx_it.o"
+"bootloader\main.o"
+"bootloader\stm32f3xx_hal_msp.o"
+--library_type=microlib --strict --scatter "bootloader\bootloader.sct"
+--diag_suppress=L6329 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "bootloader.map" -o bootloader\bootloader.axf
