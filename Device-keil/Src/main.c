@@ -39,6 +39,7 @@
 #include "main.h"
 #include "can_driver.h"
 #include "device.h"
+#include "flash.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -67,18 +68,28 @@ static void MX_GPIO_Init(void);
 
 int main(void)
 {
-
+  uint16_t hAux;
   /* USER CODE BEGIN 1 */
+  Message msg = Message_Initializer;
+  
+  config_load();
 
   /* USER CODE END 1 */
-
+  if (BootTrigger == 0) // Will not go into bootloader
+  {
+    device_Run();
+  }
+  // Set trigger to 0, next boot will go into application directly
+  config_buf[0] = 0;
+  config_verify();
+//  hAux = 0;
+//  flash_write_halfwords(BL_CONFIG_BASE, &hAux, 1);
   /* MCU Configuration----------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -95,29 +106,23 @@ int main(void)
   /* USER CODE BEGIN 2 */
   device_Init();
   /* USER CODE END 2 */
+  device_SetTrigger();
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   
-  HAL_Delay(500);
-  
-  if (device_GetTrigger() == 0)
-  {
-    if (!device_Run())
-    {
-      device_SetTrigger(1);
-      MSG_PRINT(0x02, " Go into bootloader! ", 0xff);
-    }
-  }
-  else
-  {
-    MSG_PRINT(0x02, " Go into bootloader! ", 0xff);
-  }
+//  HAL_Delay(500);
   
   while (1)
   {
   /* USER CODE END WHILE */
-
+    HAL_GPIO_WritePin(GPIOB, LED_B_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, LED_Y_Pin, GPIO_PIN_SET);
+    HAL_Delay(100);
+    HAL_GPIO_WritePin(GPIOB, LED_B_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, LED_Y_Pin, GPIO_PIN_RESET);
+    HAL_Delay(100);
+//    canSend(&msg);
   /* USER CODE BEGIN 3 */
 
   }

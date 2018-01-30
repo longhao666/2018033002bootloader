@@ -77,7 +77,7 @@ typedef struct
   uint8_t  data[8]; /**< message's datas */
 } Message;
 
-#define Message_Initializer {0,0,0,{0,0,0,0,0,0,0,0}}
+#define Message_Initializer {(uint16_t)0,0,0,{0,0,0,0,0,0,0,0}}
 #define Message_Trigger {0xff, 0, 8, {0x22, 0x5A, 0x58, 0x46, 0x57, 0x50, 0x4D, 0x4A}}
 
 typedef uint8_t (*canSend_t)(Message *);

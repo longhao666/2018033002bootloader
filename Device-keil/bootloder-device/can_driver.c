@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "can_driver.h"
+#include "stm32f3xx_hal.h"
 #include "device.h"
 
 #include "main.h"
@@ -286,6 +287,12 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan)
     canDispatch(&(RxMSG));
     HAL_CAN_Receive_IT(hcan,CAN_FIFO0);
   }
+}
+
+void HAL_CAN_ErrorCallback(CAN_HandleTypeDef* hcan)
+{
+  if (hcan->ErrorCode == HAL_CAN_ERROR_FOV0)
+  {}
 }
 
 

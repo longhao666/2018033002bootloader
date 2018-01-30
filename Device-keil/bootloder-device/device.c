@@ -4,13 +4,6 @@
 #include "device.h"
 #include "flash.h"
 
-uint16_t nodeid = 1;
-
-uint32_t Firmware_Version = DEFAULT_FW_VERSION;
-uint32_t Firmware_UpdateFlag;
-uint32_t Firmware_FlashAdress = DEFAULT_FW_FLASH_ADDR;
-uint32_t Firmware_FlashByteNbr = DEFAULT_FW_FLASH_LEN;
-
 uint32_t download_addr = 0;
 uint32_t download_len = 0;
 uint32_t downloaded_len = 0;
@@ -22,7 +15,7 @@ uint32_t uploaded_len = 0;
 uint8_t  download_buf[MAX_BUFF_SIZE];
 uint8_t  upload_buf[MAX_BUFF_SIZE];
 
-uint8_t bootloader_trigged = 0;
+//uint8_t bootloader_trigged = 0;
 
 uint8_t ack_1 = 1;
 uint8_t ack_0 = 0;
@@ -33,63 +26,57 @@ void tx_ack(uint8_t cmdword, uint8_t *buf, uint8_t len);
 
 uint16_t device_GetNodeid(void)
 {
-  return nodeid;
+  return NodeId;
 }
 
 void device_SetNodeid(uint16_t id)
 {
-  nodeid = id;
+  flash_write_halfwords(CMDMAP_ADDR+2, &id, 1);
 }
   
 void device_Init(void)
 {
   config_load();
-  
-  Firmware_UpdateFlag = *(uint32_t*)&config_buf[FW_FLAG_OFFSET];
-  
-  if ((Firmware_UpdateFlag != 0) && (Firmware_UpdateFlag!= 1)) /* load default set */
+  if (device_GetNodeid() == 0xFFFF)
   {
-    nodeid = 1;
+    device_SetNodeid(1);
   }
-  else
-  {
-    Firmware_Version = *(uint32_t*)&config_buf[FW_VER_OFFSET];
-    
-    Firmware_FlashAdress = *(uint32_t*)&config_buf[FW_ADDR_OFFSET];
-    Firmware_FlashByteNbr= *(uint32_t*)&config_buf[FW_NBR_OFFSET];
-    
-    nodeid = *(uint16_t*)&config_buf[NODE_ID_OFFSET];
-  }
-  nodeid = 1;
+  
 }
 
 void device_SendInfo(uint8_t option)
 {
   uint8_t buf[7];
+  uint16_t hAux;
+  uint32_t wAux;
 
   buf[0] = option;
 
   if ((option & INFO_FW_VERSION) == INFO_FW_VERSION)
   {
-    memcpy(&buf[1], &Firmware_Version, 4); 
+    hAux = Firmware_Version;
+    memcpy(&buf[1], &hAux, 2); 
     tx_ack(CMD_READ_INFO, buf, 5);
   }
 
   if ((option &INFO_FW_FLAG) == INFO_FW_FLAG)
   {
-    memcpy(&buf[1], &Firmware_UpdateFlag, 4);
+    hAux = Firmware_UpdateFlag;
+    memcpy(&buf[1], &hAux, 2);
     tx_ack(CMD_READ_INFO, buf, 5);
   }
 
   if ((option &INFO_FW_ADDRESS) == INFO_FW_ADDRESS)
   {
-    memcpy(&buf[1], &Firmware_FlashAdress, 4); 
+    wAux = Firmware_FlashAdress;
+    memcpy(&buf[1], &wAux, 4); 
     tx_ack(CMD_READ_INFO, buf, 5);
   }
 
   if ((option &INFO_FW_BYTE_NBR) == INFO_FW_BYTE_NBR)
   {
-    memcpy(&buf[1], &Firmware_FlashByteNbr, 4); 
+    wAux = Firmware_FlashByteNbr;
+    memcpy(&buf[1], &wAux, 4); 
     tx_ack(CMD_READ_INFO, buf, 5);
   }
 }
@@ -104,21 +91,14 @@ void device_SetInfo(Message *m)
 
   switch (option)
   {
-    case INFO_FW_VERSION:
-      memcpy(&config_buf[FW_VER_OFFSET], &m->data[2], 4);
-      Firmware_Version = *(uint32_t*)&config_buf[FW_VER_OFFSET];
-      break;
     case INFO_FW_FLAG:
-      memcpy(&config_buf[FW_FLAG_OFFSET], &m->data[2], 4); 
-      Firmware_UpdateFlag = *(uint32_t*)&config_buf[FW_FLAG_OFFSET];
+      memcpy(&config_buf[1], &(m->data[2]), 2);
       break;
     case INFO_FW_ADDRESS:
-      memcpy(&config_buf[FW_ADDR_OFFSET], &m->data[2], 4); 
-      Firmware_FlashAdress = *(uint32_t*)&config_buf[FW_ADDR_OFFSET];
+      memcpy(&config_buf[2], &(m->data[2]), 4);
       break;
     case INFO_FW_BYTE_NBR:
-      memcpy(&config_buf[FW_NBR_OFFSET], &m->data[2], 4); 
-      Firmware_FlashByteNbr= *(uint32_t*)&config_buf[FW_NBR_OFFSET];
+      memcpy(&config_buf[4], &(m->data[2]), 4);
       break;
     default:
       buf[1] = 0;
@@ -130,53 +110,92 @@ void device_SetInfo(Message *m)
   config_verify();
 }
 
+void NVIC_DeInit(void)
+{
+  uint8_t tmp;
+
+  /* Disable all interrupts */
+  NVIC->ICER[0] = 0xFFFFFFFF;
+  NVIC->ICER[1] = 0x00000001;
+  /* Clear all pending interrupts */
+  NVIC->ICPR[0] = 0xFFFFFFFF;
+  NVIC->ICPR[1] = 0x00000001;
+
+  /* Clear all interrupt priority */
+  for (tmp = 0; tmp < 32; tmp++) {
+      NVIC->IP[tmp] = 0x00;
+  }
+}
+
+void NVIC_SCBDeInit(void)
+{
+  uint8_t tmp;
+
+  SCB->ICSR = 0x0A000000;
+  SCB->VTOR = 0x00000000;
+  SCB->AIRCR = 0x05FA0000;
+  SCB->SCR = 0x00000000;
+  SCB->CCR = 0x00000000;
+
+  for (tmp = 0; tmp < 32; tmp++) {
+      SCB->SHP[tmp] = 0x00;
+  }
+
+  SCB->SHCSR = 0x00000000;
+  SCB->CFSR = 0xFFFFFFFF;
+  SCB->HFSR = 0xFFFFFFFF;
+  SCB->DFSR = 0xFFFFFFFF;
+}
 int8_t device_Run(void)
 {
   if (Firmware_UpdateFlag == 1)
   {
-    MSG_PRINT(0x02, " Prepared to go into application! ", 0xff);
+//    MSG_PRINT(0x02, " Prepared to go into application! ", 0xff);
 //    __HAL_RCC_CAN1_CLK_DISABLE();
-//    __disable_irq();
-//    __set_PRIMASK(1);
+    __disable_irq();
+    __set_PRIMASK(1);
     if (((*(__IO uint32_t*)Firmware_FlashAdress) & 0x2FFE0000 ) == 0x20000000)
     {
       __ASM("CPSID  I");
       app_reset_fun app_reset = (app_reset_fun)*(__IO uint32_t*)(Firmware_FlashAdress + 4);
-//      SCB->VTOR = Firmware_FlashAdress;
 //      __set_BASEPRI(0);                                                                                            
 //      __set_FAULTMASK(0);
-//      __set_PSP(*((__IO uint32_t*)Firmware_FlashAdress));      
+//      __set_PSP(*((__IO uint32_t*)Firmware_FlashAdress)); 
+      __set_CONTROL(0);        
       __set_MSP(*(__IO uint32_t*)Firmware_FlashAdress);         
-    SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
+      SysTick->CTRL = 0;
+      SysTick->LOAD = 0;
+      SysTick->VAL = 0;
+//      HAL_NVIC_DisableIRQ(SysTick_IRQn);
+      HAL_NVIC_DisableIRQ(USB_LP_CAN_RX0_IRQn);
+      NVIC_DeInit();
+      NVIC_SCBDeInit();
+      SCB->VTOR = Firmware_FlashAdress;
       app_reset(); 
     }      
   }
   else
   {
-    MSG_PRINT(0x21, " No valid firmware! ", 0xff);
+//    MSG_PRINT(0x21, " No valid firmware! ", 0xff);
     return 0;
   }
   return 1;
 
 }
 
-uint8_t device_GetTrigger(void)
-{
-  return bootloader_trigged;
-}
+//uint8_t device_GetTrigger(void)
+//{
+//  return bootloader_trigged;
+//}
 
-void device_SetTrigger(uint8_t t)
+void device_SetTrigger(void)
 {
-  bootloader_trigged = t;
-  if (t == 1)
-  {
-    Message msg;
-    msg.cob_id = 0x80;
-    msg.rtr = 0;
-    msg.len = 1;
-    msg.data[0] = nodeid;
-    canSend(&msg);
-  }
+  Message msg;
+  msg.cob_id = 0x80;
+  msg.rtr = 0;
+  msg.len = 1;
+  msg.data[0] = device_GetNodeid();
+  canSend(&msg);
 }
 
 /*!                                                                                                
@@ -188,24 +207,14 @@ void canDispatch(Message *m)
 {
   uint16_t cob_id = UNS16_LE(m->cob_id);
   Message msg = Message_Initializer;
+  const char trigger[8] = {0x22, 0x5A, 0x58, 0x46, 0x57, 0x50, 0x4D, 0x4A};
 
-  Message trigger = Message_Trigger;
-
-  if ((cob_id&0x7f) != nodeid)
+  if ((m->cob_id == 0xFF) && (0 == strncmp((const char*)m->data, (const char*)trigger, 8)))
   {
-    if (((cob_id&0x7f) == 0x7f) && (0 == strncmp((const char*)m->data, (const char*)trigger.data, 8)))
-    {
-      device_SetTrigger(1);
-//      MSG_PRINT(0x20, " Bootloader triggered! ", 0xff);
-    }
+    device_SetTrigger();
     return;
   }
-  if (bootloader_trigged == 0)
-  {
-    MSG_PRINT(0x20, " Waiting trigger...! ", 0xff);
-    return;
-  }
-  
+
   switch(cob_id >> 7)
   {
     case FRAME_CMD:    /* can be a SYNC or a EMCY message */
@@ -222,7 +231,7 @@ void canDispatch(Message *m)
         download_len = (uint32_t)m->data[5] + ((uint32_t)m->data[6]<<8) + ((uint32_t)m->data[7]<<16);
         downloaded_len = 0;
 
-        msg.cob_id = ((uint16_t)FRAME_DOWNLOADd << 7) + nodeid;
+        msg.cob_id = ((uint16_t)FRAME_DOWNLOADd << 7) + device_GetNodeid();
         msg.len = 8;
         msg.data[0] = 0x60;
         memcpy(&msg.data[1], &m->data[1], 7);
@@ -238,7 +247,7 @@ void canDispatch(Message *m)
           download_addr += MAX_BUFF_SIZE;
         }
 
-        msg.cob_id = ((uint16_t)FRAME_DOWNLOADd << 7) + nodeid;
+        msg.cob_id = ((uint16_t)FRAME_DOWNLOADd << 7) + device_GetNodeid();
         msg.len = 8;
         msg.data[0] = 0x20 + m->data[0];
       }
@@ -250,7 +259,7 @@ void canDispatch(Message *m)
 
         flash_write_halfwords(download_addr, (uint16_t*)download_buf, ((downloaded_len % MAX_BUFF_SIZE)+1)>>1);
 
-        msg.cob_id = ((uint16_t)FRAME_DOWNLOADd << 7) + nodeid;
+        msg.cob_id = ((uint16_t)FRAME_DOWNLOADd << 7) + device_GetNodeid();
         msg.len = 8;
         msg.data[0] = 0x20 + (m->data[0] & 0xF0);
         MSG_PRINT(0x02, " Download completed! ", 0xff);
@@ -265,7 +274,7 @@ void canDispatch(Message *m)
       }
       else if (m->data[0] == 0x40) /*  0x40 */
       {
-        msg.cob_id = ((uint16_t)FRAME_UPLOADd << 7) + nodeid;
+        msg.cob_id = ((uint16_t)FRAME_UPLOADd << 7) + device_GetNodeid();
         msg.len = 8;
 
         upload_addr = (uint32_t)m->data[1] + ((uint32_t)m->data[2]<<8) + ((uint32_t)m->data[3]<<16) + ((uint32_t)m->data[4]<<24);
@@ -308,7 +317,8 @@ void proceedCMD(Message *m)
       tx_ack(CMD_ERASE, &ack_1, 1);
       break;
     case CMD_RUN:
-      device_Run();  /* will not continue if successfully running */
+      HAL_NVIC_SystemReset();
+//      device_Run();  /* will not continue if successfully running */
       tx_ack(CMD_RUN, &ack_0, 1); /* error occurred */
       break;
     default:
@@ -321,7 +331,7 @@ void uploading(uint8_t cs)
 {
   Message msg = Message_Initializer;
 
-  msg.cob_id = ((uint16_t)FRAME_UPLOADd << 7) + nodeid;
+  msg.cob_id = ((uint16_t)FRAME_UPLOADd << 7) + device_GetNodeid();
   msg.rtr = 0;
   msg.data[0] = cs;
   msg.len = 8;
@@ -365,7 +375,7 @@ void uploading(uint8_t cs)
 void tx_ack(uint8_t cmdword, uint8_t *buf, uint8_t len)
 {
   Message msg;
-  msg.cob_id = ((uint16_t)FRAME_ACK << 7) + nodeid;
+  msg.cob_id = ((uint16_t)FRAME_ACK << 7) + device_GetNodeid();
   msg.rtr = 0;
   msg.len = len + 1;
   msg.data[0] = cmdword;
