@@ -8,14 +8,8 @@
 #define STATUS_ERROR        3
 
 ///firmware configure
-#define DEF_CONFIG_ADDR     0x0801F800
-#define DEF_CONFIG_LEN      0x100
-#define NODE_ID_OFFSET    0
-
-#define FW_VER_OFFSET     DEF_CONFIG_LEN - 16
-#define FW_FLAG_OFFSET    FW_VER_OFFSET + 4
-#define FW_ADDR_OFFSET    FW_VER_OFFSET + 8
-#define FW_NBR_OFFSET     FW_VER_OFFSET + 12
+#define DEF_CONFIG_ADDR     0x0803800
+#define DEF_CONFIG_LEN      160
 
 #define ACK_READ_BIT  ((uint16_t)0x01<<0)
 #define ACK_WRITE_BIT ((uint16_t)0x01<<1)
@@ -29,8 +23,8 @@
 #define INFO_FW_ADDRESS   ((uint8_t)0x01 << 2)
 #define INFO_FW_BYTE_NBR  ((uint8_t)0x01 << 3)
 
-extern uint32_t Firmware_Version;
-extern uint32_t Firmware_UpdateFlag;
+extern uint16_t Firmware_Version;
+extern uint16_t Firmware_UpdateFlag;
 extern uint32_t Firmware_FlashAdress;
 extern uint32_t Firmware_FlashByteNbr;
 

@@ -82,8 +82,6 @@ int main(void)
   // Set trigger to 0, next boot will go into application directly
   config_buf[0] = 0;
   config_verify();
-//  hAux = 0;
-//  flash_write_halfwords(BL_CONFIG_BASE, &hAux, 1);
   /* MCU Configuration----------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */

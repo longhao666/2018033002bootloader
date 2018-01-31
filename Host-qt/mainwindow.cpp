@@ -141,6 +141,19 @@ void MainWindow::on_pBReadInfo_clicked()
     }
     else{
         ui->tEPrintMsg->append("Read info succeeded");
+        if (option == INFO_FW_VERSION) {
+            ui->tEPrintMsg->append("Firmware Version: "+QString::number(Firmware_Version));
+        }
+        if (option == INFO_FW_FLAG) {
+            ui->tEPrintMsg->append("Firmware Vaild Flag: "+QString::number(Firmware_UpdateFlag));
+        }
+        if (option == INFO_FW_ADDRESS) {
+            ui->tEPrintMsg->append("Firmware Address: 0x"+QString::number(Firmware_FlashAdress,16).toUpper());
+        }
+        if (option == INFO_FW_BYTE_NBR) {
+            ui->tEPrintMsg->append("Firmware Size: "+QString::number(Firmware_FlashByteNbr));
+        }
+
     }
 
     host_ClearAckStatus(ACK_READ_BIT);
@@ -419,6 +432,9 @@ void MainWindow::on_pBOpenHex_clicked()
     this->hexBuf = (char*)malloc(this->hexSize);
     memcpy((void*)this->hexBuf, (void*)ba.data(), this->hexSize);
 
+    ui->tEPrintMsg->append("start address: 0x"+QString::number(this->hexAddr,16).toUpper());
+    ui->tEPrintMsg->append("size: "+QString::number(this->hexSize,10)+" bytes");
+
     ui->pBDownload->setEnabled(true);
 }
 
@@ -564,7 +580,7 @@ void MainWindow::on_pBLoadCfg_clicked()
     if (ok){
         configAddr = temp1;
     }
-    int temp2 =  configure->value("Configure/len").toString().toInt(&ok, 16);
+    int temp2 =  configure->value("Configure/len").toString().toInt(&ok, 10);
     if (ok){
         if (temp2 != (int)configLen){
             configLen = temp2;
@@ -650,11 +666,11 @@ void MainWindow::on_pBReadCfg_clicked()
     }
 
     host_UploadRequst(id, (uint8_t *)configBuf, configAddr, configLen);
-    if (host_GetAckStatus(ACK_UPLOAD_BIT, 5000) != 1){
+    if (host_GetAckStatus(ACK_UPLOAD_BIT, 5000) != 1) {
         ui->tEPrintMsg->append("Reading configure failed");
         return;
     }
-    else{
+    else {
         ui->tEPrintMsg->append("Reading configure succeeded");
     }
     host_ClearAckStatus(ACK_UPLOAD_BIT);

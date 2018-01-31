@@ -6,9 +6,9 @@
 #include <QTime>
 #include <QCoreApplication>
 
-uint32_t Firmware_Version;
+uint16_t Firmware_Version;
 
-uint32_t Firmware_UpdateFlag;
+uint16_t Firmware_UpdateFlag;
 uint32_t Firmware_FlashAdress;
 uint32_t Firmware_FlashByteNbr;
 
@@ -111,7 +111,6 @@ void host_GetInfo(uint16_t nodeid, uint8_t option)
   msg.data[1] = option; /* read all info */
 
   canSend(&msg);
-
 }
 
 void host_SetInfo(uint16_t nodeid, uint8_t option, uint32_t buf)
@@ -350,10 +349,10 @@ void rx_ack(Message *m)
       switch (m->data[1]) /* option */
       {
         case INFO_FW_VERSION:
-          memcpy(&Firmware_Version, &m->data[2], 4);
+          memcpy(&Firmware_Version, &m->data[2], 2);
           break;
         case INFO_FW_FLAG:
-          memcpy(&Firmware_UpdateFlag, &m->data[2], 4);
+          memcpy(&Firmware_UpdateFlag, &m->data[2], 2);
           break;
         case INFO_FW_ADDRESS:
           memcpy(&Firmware_FlashAdress, &m->data[2], 4);

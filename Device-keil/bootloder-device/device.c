@@ -56,14 +56,14 @@ void device_SendInfo(uint8_t option)
   {
     hAux = Firmware_Version;
     memcpy(&buf[1], &hAux, 2); 
-    tx_ack(CMD_READ_INFO, buf, 5);
+    tx_ack(CMD_READ_INFO, buf, 3);
   }
 
   if ((option &INFO_FW_FLAG) == INFO_FW_FLAG)
   {
     hAux = Firmware_UpdateFlag;
     memcpy(&buf[1], &hAux, 2);
-    tx_ack(CMD_READ_INFO, buf, 5);
+    tx_ack(CMD_READ_INFO, buf, 3);
   }
 
   if ((option &INFO_FW_ADDRESS) == INFO_FW_ADDRESS)

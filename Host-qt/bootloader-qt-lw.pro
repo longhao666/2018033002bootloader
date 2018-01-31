@@ -44,9 +44,9 @@ FORMS += \
 
 
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/Win32/ -lPCANBasic
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/Win32/ -lPCANBasic
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/x64/ -lPCANBasic
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/x64/ -lPCANBasic
 
 INCLUDEPATH += $$PWD/.
 INCLUDEPATH += $$PWD/bootloder
-DEPENDPATH += $$PWD/lib/Win32
+DEPENDPATH += $$PWD/lib/x64
