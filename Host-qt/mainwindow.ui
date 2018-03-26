@@ -77,6 +77,9 @@
     </property>
    </widget>
    <widget class="QPushButton" name="pBUpload">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -271,14 +274,53 @@
    <widget class="QPushButton" name="pBSwitch2App">
     <property name="geometry">
      <rect>
-      <x>90</x>
-      <y>230</y>
+      <x>30</x>
+      <y>200</y>
       <width>75</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
      <string>Run</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lESetId">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>270</y>
+      <width>41</width>
+      <height>20</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pBSetNodeid">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>270</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Set ID</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pBSetBoot">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>10</y>
+      <width>81</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Go into boot</string>
     </property>
    </widget>
   </widget>

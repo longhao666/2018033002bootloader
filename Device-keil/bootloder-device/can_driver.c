@@ -187,10 +187,25 @@ uint8_t canInit(CAN_PORT CANx)
     sFilterConfig.FilterNumber = 0;
     sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
     sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-    sFilterConfig.FilterIdHigh = 0x0000;
-    sFilterConfig.FilterIdLow = 0x0000;
-    sFilterConfig.FilterMaskIdHigh = 0x0000;
-    sFilterConfig.FilterMaskIdLow = 0x0000;
+    sFilterConfig.FilterIdHigh = NodeId<<5;
+    sFilterConfig.FilterIdLow = 0;
+    sFilterConfig.FilterMaskIdHigh = 0x7f<<5;
+    sFilterConfig.FilterMaskIdLow = 0;
+    sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+    sFilterConfig.FilterActivation = ENABLE;
+    if (HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
+    {
+      /* Filter configuration Error */
+      _Error_Handler(__FILE__, __LINE__);
+    }
+    
+    sFilterConfig.FilterNumber = 1;
+    sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+    sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+    sFilterConfig.FilterIdHigh = 0xff<<5;
+    sFilterConfig.FilterIdLow = 0;
+    sFilterConfig.FilterMaskIdHigh = 0xff<<5;
+    sFilterConfig.FilterMaskIdLow = 0;
     sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
     sFilterConfig.FilterActivation = ENABLE;
     if (HAL_CAN_ConfigFilter(&hcan, &sFilterConfig) != HAL_OK)
@@ -200,7 +215,7 @@ uint8_t canInit(CAN_PORT CANx)
     }
     HAL_CAN_Receive_IT(&hcan, CAN_FIFO0);               
        
-//    /*##-2- Configure the CAN Filter ###########################################*/
+    /*##-2- Configure the CAN Filter ###########################################*/
 //    sFilterConfig.FilterNumber = 1;
 //    sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
 //    sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
@@ -217,20 +232,10 @@ uint8_t canInit(CAN_PORT CANx)
 //    }
 //    HAL_CAN_Receive_IT(&hcan,CAN_FIFO1);
   }
-//    hcan.pTxMsg->StdId = (uint32_t)1;
-//    hcan.pTxMsg->ExtId = 0x00;
-//    hcan.pTxMsg->RTR = 0;								  
-//    hcan.pTxMsg->IDE = CAN_ID_STD;                           
-//    hcan.pTxMsg->DLC = 8;
-//    
-//    for(i=0;i<8;i++)                                 
-//    {
-//      hcan.pTxMsg->Data[i] = 0;
-//    }
-//    HAL_CAN_Transmit(&hcan,1);
-    HAL_NVIC_EnableIRQ(USB_LP_CAN_RX0_IRQn);
+    
+  HAL_NVIC_EnableIRQ(USB_LP_CAN_RX0_IRQn);
 
-    return 0;
+  return 0;
 }
 
 /**

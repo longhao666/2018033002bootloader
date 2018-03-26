@@ -73,6 +73,10 @@ private slots:
 
     void on_pBSwitch2App_clicked();
 
+    void on_pBSetNodeid_clicked();
+
+    void on_pBSetBoot_clicked();
+
 private:
 
     bool startSearch;

@@ -50,6 +50,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+uint8_t trigger_flag = 0;
 
 /* USER CODE END PV */
 
@@ -120,6 +121,11 @@ int main(void)
     HAL_GPIO_WritePin(GPIOB, LED_B_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(GPIOB, LED_Y_Pin, GPIO_PIN_RESET);
     HAL_Delay(100);
+    if (trigger_flag) {
+      trigger_flag = 0;
+      device_SetTrigger();
+  }
+
 //    canSend(&msg);
   /* USER CODE BEGIN 3 */
 

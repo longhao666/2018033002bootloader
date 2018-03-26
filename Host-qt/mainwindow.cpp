@@ -771,3 +771,30 @@ void MainWindow::on_pBSwitch2App_clicked()
     }
     host_Switch2App(id);
 }
+
+void MainWindow::on_pBSetNodeid_clicked()
+{
+    Message msg;
+    bool ok;
+//    uint16_t setId = ui->lESetId->text().toInt(&ok);
+//    msg.cob_id = ui->cBNodeid->currentText().toInt(&ok);
+//    msg.rtr = 0;
+//    msg.len = 4;
+//    msg.data[0] = 2;
+//    msg.data[]
+//    canSend();
+}
+
+void MainWindow::on_pBSetBoot_clicked()
+{
+    Message msg = {0,0,4,{0x02, 0x0D, 0x02, 0x00}};
+    bool ok;
+    uint16_t id = ui->cBNodeid->currentText().toInt(&ok);
+
+    if (ok == false){
+        ui->tEPrintMsg->append("No valid id");
+        return;
+    }
+    msg.cob_id =id;
+    canSend(&msg);
+}

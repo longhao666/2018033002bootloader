@@ -29,17 +29,12 @@ uint16_t device_GetNodeid(void)
   return NodeId;
 }
 
-void device_SetNodeid(uint16_t id)
-{
-  flash_write_halfwords(CMDMAP_ADDR+2, &id, 1);
-}
-  
 void device_Init(void)
 {
-  config_load();
+  uint16_t id = 1;
   if (device_GetNodeid() == 0xFFFF)
   {
-    device_SetNodeid(1);
+    flash_write_halfwords(CMDMAP_ADDR+2, &id, 1);
   }
   
 }
@@ -167,6 +162,7 @@ int8_t device_Run(void)
       SysTick->LOAD = 0;
       SysTick->VAL = 0;
 //      HAL_NVIC_DisableIRQ(SysTick_IRQn);
+      // All the interrupt should be shutdown
       HAL_NVIC_DisableIRQ(USB_LP_CAN_RX0_IRQn);
       NVIC_DeInit();
       NVIC_SCBDeInit();
@@ -198,6 +194,7 @@ void device_SetTrigger(void)
   canSend(&msg);
 }
 
+extern  uint8_t trigger_flag;
 /*!                                                                                                
 **                                                                                                 
 **                                                                                                 
@@ -211,9 +208,10 @@ void canDispatch(Message *m)
 
   if ((m->cob_id == 0xFF) && (0 == strncmp((const char*)m->data, (const char*)trigger, 8)))
   {
-    device_SetTrigger();
+    trigger_flag = 1;
     return;
   }
+  if ((m->cob_id&0x7F) != NodeId) return;
 
   switch(cob_id >> 7)
   {
@@ -317,7 +315,7 @@ void proceedCMD(Message *m)
       tx_ack(CMD_ERASE, &ack_1, 1);
       break;
     case CMD_RUN:
-      HAL_NVIC_SystemReset();
+      HAL_NVIC_SystemReset();  // MCUÈí¼þ¸´Î»
 //      device_Run();  /* will not continue if successfully running */
       tx_ack(CMD_RUN, &ack_0, 1); /* error occurred */
       break;
