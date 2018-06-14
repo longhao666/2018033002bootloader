@@ -37,6 +37,7 @@ int32_t host_IsDownloading();
 int32_t host_IsUploading();
 int32_t host_IsErrorOccur();
 int32_t host_IsIdle();
+void host_SetNodeId(uint16_t id);
 
 void host_TrigBootloader(void);
 void host_GetInfo(uint16_t nodeid, uint8_t option);

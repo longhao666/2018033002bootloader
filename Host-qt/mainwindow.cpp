@@ -9,11 +9,9 @@
 #include <QSettings>
 #include <QThread>
 #include <QHeaderView>
+#include <QMessageBox>
 
 extern QQueue<QString> canPrintMsgQueue;
-
-extern uint8_t newid;
-extern uint8_t newidflag;
 
 void canRead :: run(){
     while(running){
@@ -28,6 +26,7 @@ void canRead :: stop_read(){
 
 void canRead :: start_read(){
     running = 1;
+    this->start();
 }
 
 
@@ -37,27 +36,26 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    canInit(0);
-    canReadThread.start();
+    if (canInit(0) == 0) {
+        QMessageBox::critical(NULL, "ERROR", "CAN Initiallize FAILED", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+    }
     canReadThread.start_read();
 
-    startSearch = false;
+    QIntValidator* aIntValidator = new QIntValidator;
+    aIntValidator->setRange(1, 127);
+    ui->lENodeid->setValidator(aIntValidator);
 
     configAddr = DEF_CONFIG_ADDR;
     configLen =  DEF_CONFIG_LEN;
     configBuf = (char*)malloc(configLen);
 
     ShowMsgTimer = new QTimer(this);
-    SearchNodeTimer = new QTimer(this);
 
     connect(ShowMsgTimer, SIGNAL(timeout()), this, SLOT(ShowMsg()));
-    connect(SearchNodeTimer, SIGNAL(timeout()), this, SLOT(SearchNode()));
     ShowMsgTimer->start(100);
-    SearchNodeTimer->start(100);
 
     ui->pBSaveHex->setEnabled(false);
     ui->pBDownload->setEnabled(false);
-
 
     ui->tWConfig->setColumnCount(5);
 
@@ -108,24 +106,10 @@ void MainWindow::ShowMsg()
     }
 }
 
-void MainWindow :: SearchNode()
-{
-    if (startSearch == true){
-        host_TrigBootloader();
-    }
-    if(newidflag == 1){
-        newidflag = 0;
-        if (-1 == ui->cBNodeid->findText(QString::number(newid))){
-            ui->cBNodeid->addItem(QString::number(newid));
-        }
-    }
-}
-
-
 void MainWindow::on_pBReadInfo_clicked()
 {
     bool ok;
-    uint16_t id = ui->cBNodeid->currentText().toInt(&ok);
+    uint16_t id = ui->lENodeid->text().toInt(&ok);
 
     if (ok == false){
         ui->tEPrintMsg->append("No valid id");
@@ -161,23 +145,15 @@ void MainWindow::on_pBReadInfo_clicked()
 
 void MainWindow::on_pBUpload_clicked()
 {
-    bool IsSearching = startSearch;
-    startSearch = false;
-    ui->pBSearchNode->setText("Stopped");
-
     while(!isCanOK()){
         QCoreApplication::processEvents();
     }
 
     bool ok;
-    uint16_t id = ui->cBNodeid->currentText().toInt(&ok);
+    uint16_t id = ui->lENodeid->text().toInt(&ok);
 
     if (ok == false){
         ui->tEPrintMsg->append("No valid id");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
     }
 
@@ -185,70 +161,46 @@ void MainWindow::on_pBUpload_clicked()
     host_GetInfo(id, INFO_FW_FLAG);
     if (host_GetAckStatus(ACK_READ_BIT,100) != 1) {
         ui->tEPrintMsg->append("Uploading >> Read flag failed");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
     }
     else{
         ui->tEPrintMsg->append("Uploading >> Read flag succeeded");
     }
-    host_ClearAckStatus(ACK_READ_BIT);
 
-    if (Firmware_UpdateFlag != 1){
+    if (Firmware_UpdateFlag != 1) {
         ui->tEPrintMsg->append("Uploading >> No valid firmware (flag != 1)");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
     }
 
     host_ClearAckStatus(ACK_READ_BIT);
     host_GetInfo(id, INFO_FW_VERSION);
-    if (host_GetAckStatus(ACK_READ_BIT, 100) != 1){
+    if (host_GetAckStatus(ACK_READ_BIT, 100) != 1) {
         ui->tEPrintMsg->append("Uploading >> Read firmware version failed");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
     }
     else{
         ui->tEPrintMsg->append("Uploading >> Read firmware version succeeded");
     }
-    host_ClearAckStatus(ACK_READ_BIT);
 
     host_ClearAckStatus(ACK_READ_BIT);
     host_GetInfo(id, INFO_FW_ADDRESS);
     if (host_GetAckStatus(ACK_READ_BIT, 100) != 1){
         ui->tEPrintMsg->append("Uploading >> Read firmware address failed");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
     }
     else{
         ui->tEPrintMsg->append("Uploading >> Read firmware address succeeded");
     }
-    host_ClearAckStatus(ACK_READ_BIT);
 
     host_ClearAckStatus(ACK_READ_BIT);
     host_GetInfo(id, INFO_FW_BYTE_NBR);
     if (host_GetAckStatus(ACK_READ_BIT, 100) != 1){
         ui->tEPrintMsg->append("Uploading >> Read firmware bytes number failed");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
     }
     else{
         ui->tEPrintMsg->append("Uploading >> Read firmware bytes number succeeded");
     }
-    host_ClearAckStatus(ACK_READ_BIT);
 
     this->saveHexBuf = (char*)malloc(Firmware_FlashByteNbr);
 
@@ -256,6 +208,7 @@ void MainWindow::on_pBUpload_clicked()
 
     this->saveHexSize = Firmware_FlashByteNbr;
 
+    host_ClearAckStatus(ACK_READ_BIT);
     host_UploadRequst(id, (uint8_t *)this->saveHexBuf, saveHexAddr, saveHexSize);
 
     while (host_IsIdle()){
@@ -275,99 +228,67 @@ void MainWindow::on_pBUpload_clicked()
         ui->pBSaveHex->setEnabled(true);
 //    }
 //    host_ClearAckStatus(ACK_UPLOAD_BIT);
-    if (IsSearching){
-        startSearch = true;
-        ui->pBSearchNode->setText("Searching");
-    }
     return;
 }
 
 void MainWindow::on_pBDownload_clicked()
 {
-    bool IsSearching = startSearch;
-    startSearch = false;
-    ui->pBSearchNode->setText("Stopped");
-
     while(!isCanOK()){
         QCoreApplication::processEvents();
     }
 
     bool ok;
-    uint16_t id = ui->cBNodeid->currentText().toInt(&ok);
+    uint16_t id = ui->lENodeid->text().toInt(&ok);
 
     if (ok == false){
         ui->tEPrintMsg->append("No valid id");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
     }
 
     uint32_t addr = this->hexAddr;
-    uint8_t *buf = (uint8_t*)this->hexBuf;
+    uint8_t  *buf = (uint8_t*)this->hexBuf;
     uint32_t len = this->hexSize;
 
     host_ClearAckStatus(ACK_WRITE_BIT);
     host_SetInfo(id, INFO_FW_FLAG, 0);
     if (host_GetAckStatus(ACK_WRITE_BIT, 250) != 1){
         ui->tEPrintMsg->append("Write info flag failed");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
-    }
-    else{
+    } else{
         ui->tEPrintMsg->append("Write info flag succeeded");
     }
-    host_ClearAckStatus(ACK_WRITE_BIT);
 
     host_ClearAckStatus(ACK_WRITE_BIT);
     host_SetInfo(id, INFO_FW_ADDRESS, addr);
     if (host_GetAckStatus(ACK_WRITE_BIT, 250) != 1){
         ui->tEPrintMsg->append("Write info addr failed");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
     }
     else{
         ui->tEPrintMsg->append("Write info addr succeeded");
     }
-    host_ClearAckStatus(ACK_WRITE_BIT);
 
     host_ClearAckStatus(ACK_WRITE_BIT);
     host_SetInfo(id, INFO_FW_BYTE_NBR, len);
     if (host_GetAckStatus(ACK_WRITE_BIT, 250) != 1){
         ui->tEPrintMsg->append("Write info len failed");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
     }
     else{
         ui->tEPrintMsg->append("Write info len succeeded");
     }
-    host_ClearAckStatus(ACK_WRITE_BIT);
 
     host_ClearAckStatus(ACK_ERASE_BIT);
     host_EraseRequest(id, addr, len);
     if (host_GetAckStatus(ACK_ERASE_BIT, 750) != 1){
         ui->tEPrintMsg->append("Erase flash failed");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
     }
     else{
         ui->tEPrintMsg->append("Erase flash succeeded");
     }
-    host_ClearAckStatus(ACK_ERASE_BIT);
 
+    host_ClearAckStatus(ACK_ERASE_BIT);
     host_DownloadRequest(id, buf, addr, len);
 
     while (host_IsIdle()){
@@ -392,20 +313,12 @@ void MainWindow::on_pBDownload_clicked()
     host_SetInfo(id, INFO_FW_FLAG, 1);
     if (host_GetAckStatus(ACK_WRITE_BIT, 250) != 1){
         ui->tEPrintMsg->append("Write flag 1 failed");
-        if (IsSearching){
-            startSearch = true;
-            ui->pBSearchNode->setText("Searching");
-        }
         return;
     }
     else{
         ui->tEPrintMsg->append("Write flag 1 succeeded");
     }
     host_ClearAckStatus(ACK_WRITE_BIT);
-    if (IsSearching){
-        startSearch = true;
-        ui->pBSearchNode->setText("Searching");
-    }
     return;
 }
 
@@ -554,17 +467,6 @@ void MainWindow::on_pBClearPrintMsg_clicked()
     ui->tEPrintMsg->clear();
 }
 
-void MainWindow::on_pBSearchNode_clicked()
-{
-    if (startSearch == true){
-        startSearch = false;
-        ui->pBSearchNode->setText("Stopped");
-    }
-    else{
-        startSearch = true;
-        ui->pBSearchNode->setText("Searching");
-    }
-}
 
 void MainWindow::on_pBLoadCfg_clicked()
 {
@@ -581,7 +483,7 @@ void MainWindow::on_pBLoadCfg_clicked()
         configAddr = temp1;
     }
     int temp2 =  configure->value("Configure/len").toString().toInt(&ok, 10);
-    if (ok){
+    if (ok) {
         if (temp2 != (int)configLen){
             configLen = temp2;
             free(configBuf);
@@ -658,7 +560,7 @@ void MainWindow::on_pBSaveCfg_clicked()
 void MainWindow::on_pBReadCfg_clicked()
 {
     bool ok;
-    uint16_t id = ui->cBNodeid->currentText().toInt(&ok);
+    uint16_t id = ui->lENodeid->text().toInt(&ok);
 
     if (ok == false){
         ui->tEPrintMsg->append("No valid id");
@@ -708,7 +610,7 @@ void MainWindow::on_pBReadCfg_clicked()
 void MainWindow::on_pBWriteCfg_clicked()
 {
     bool ok;
-    uint16_t id = ui->cBNodeid->currentText().toInt(&ok);
+    uint16_t id = ui->lENodeid->text().toInt(&ok);
     if (ok == false){
         ui->tEPrintMsg->append("No valid id");
         return;
@@ -763,7 +665,7 @@ void MainWindow::on_tWConfig_cellChanged(int row, int column)
 void MainWindow::on_pBSwitch2App_clicked()
 {
     bool ok;
-    uint16_t id = ui->cBNodeid->currentText().toInt(&ok);
+    uint16_t id = ui->lENodeid->text().toInt(&ok);
 
     if (ok == false){
         ui->tEPrintMsg->append("No valid id");
@@ -772,24 +674,11 @@ void MainWindow::on_pBSwitch2App_clicked()
     host_Switch2App(id);
 }
 
-void MainWindow::on_pBSetNodeid_clicked()
-{
-    Message msg;
-    bool ok;
-//    uint16_t setId = ui->lESetId->text().toInt(&ok);
-//    msg.cob_id = ui->cBNodeid->currentText().toInt(&ok);
-//    msg.rtr = 0;
-//    msg.len = 4;
-//    msg.data[0] = 2;
-//    msg.data[]
-//    canSend();
-}
-
 void MainWindow::on_pBSetBoot_clicked()
 {
     Message msg = {0,0,4,{0x02, 0x0D, 0x02, 0x00}};
     bool ok;
-    uint16_t id = ui->cBNodeid->currentText().toInt(&ok);
+    uint16_t id = ui->lENodeid->text().toInt(&ok);
 
     if (ok == false){
         ui->tEPrintMsg->append("No valid id");
@@ -797,4 +686,13 @@ void MainWindow::on_pBSetBoot_clicked()
     }
     msg.cob_id =id;
     canSend(&msg);
+}
+
+void MainWindow::on_lENodeid_editingFinished()
+{
+    bool ok;
+    uint16_t id = ui->lENodeid->text().toInt(&ok);
+    if (ok){
+        host_SetNodeId(id);
+    }
 }

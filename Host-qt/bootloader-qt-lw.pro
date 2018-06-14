@@ -50,3 +50,6 @@ else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/x64/ -lPCANBasic
 INCLUDEPATH += $$PWD/.
 INCLUDEPATH += $$PWD/bootloder
 DEPENDPATH += $$PWD/lib/x64
+
+RESOURCES += \
+    bootloader.qrc

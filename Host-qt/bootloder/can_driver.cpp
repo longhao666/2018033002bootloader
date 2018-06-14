@@ -82,7 +82,7 @@ uint8_t canRead(void)
 }
 
 unsigned int __stdcall ReadThread(void* arg) {
-    while (true) {
+//    while (true) {
         DWORD dReturn = WaitForSingleObject(hEvent, INFINITE);
         // 事件触发
         if ( WAIT_OBJECT_0 == dReturn) {
@@ -91,7 +91,7 @@ unsigned int __stdcall ReadThread(void* arg) {
                 isOK = canRead();
             }
         }
-    }
+//    }
     return 0;
 }
 
@@ -120,11 +120,10 @@ uint8_t canInit(CAN_PORT CANx)
         char strMsg[256];
         CAN_GetErrorText(result, 0, strMsg);
         qDebug() << strMsg;
-        //errorTxt = strMsg;
         return 0;
     }
     else{
-        qDebug() << "SetValue OK";
+//        qDebug() << "SetValue OK";
     }
 
     // 开启新线程 //    WaitForSingleObject(handle, 5); // 等待5ms

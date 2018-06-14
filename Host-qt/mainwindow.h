@@ -44,12 +44,11 @@ public:
 
 private:
     Ui::MainWindow *ui;
-    QTimer * ShowMsgTimer, * SearchNodeTimer;
+    QTimer * ShowMsgTimer;
     canRead canReadThread;
 
 private slots:
     void ShowMsg();
-    void SearchNode();
 
     void on_pBReadInfo_clicked();
     void on_pBUpload_clicked();
@@ -59,7 +58,6 @@ private slots:
 
     void on_pBClearPrintMsg_clicked();
 
-    void on_pBSearchNode_clicked();
 
     void on_pBLoadCfg_clicked();
 
@@ -73,14 +71,11 @@ private slots:
 
     void on_pBSwitch2App_clicked();
 
-    void on_pBSetNodeid_clicked();
-
     void on_pBSetBoot_clicked();
 
+    void on_lENodeid_editingFinished();
+
 private:
-
-    bool startSearch;
-
     uint32_t configAddr;
     uint32_t configLen;
 

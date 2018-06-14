@@ -17,7 +17,7 @@
    <widget class="QPushButton" name="pBReadInfo">
     <property name="geometry">
      <rect>
-      <x>70</x>
+      <x>20</x>
       <y>40</y>
       <width>75</width>
       <height>23</height>
@@ -33,7 +33,7 @@
    <widget class="QComboBox" name="cBInfoSelect">
     <property name="geometry">
      <rect>
-      <x>150</x>
+      <x>100</x>
       <y>40</y>
       <width>131</width>
       <height>22</height>
@@ -164,38 +164,6 @@
      <string>Clear</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pBSearchNode">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>10</y>
-      <width>75</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Stopped</string>
-    </property>
-   </widget>
-   <widget class="QComboBox" name="cBNodeid">
-    <property name="geometry">
-     <rect>
-      <x>18</x>
-      <y>40</y>
-      <width>51</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="editable">
-     <bool>true</bool>
-    </property>
-    <property name="currentText">
-     <string/>
-    </property>
-    <property name="maxCount">
-     <number>127</number>
-    </property>
-   </widget>
    <widget class="QPushButton" name="pBReadCfg">
     <property name="geometry">
      <rect>
@@ -284,32 +252,6 @@
      <string>Run</string>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lESetId">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>270</y>
-      <width>41</width>
-      <height>20</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pBSetNodeid">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>80</x>
-      <y>270</y>
-      <width>75</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Set ID</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="pBSetBoot">
     <property name="geometry">
      <rect>
@@ -321,6 +263,16 @@
     </property>
     <property name="text">
      <string>Go into boot</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lENodeid">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>10</y>
+      <width>71</width>
+      <height>20</height>
+     </rect>
     </property>
    </widget>
   </widget>

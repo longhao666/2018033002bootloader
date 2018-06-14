@@ -6,6 +6,7 @@
 #include <QTime>
 #include <QCoreApplication>
 
+uint16_t NodeId = 0xffff;
 uint16_t Firmware_Version;
 
 uint16_t Firmware_UpdateFlag;
@@ -44,6 +45,8 @@ void host_TrigBootloader(void)
 
 void host_NodeInit()
 {
+  NodeId = 0xffff;
+
   Firmware_Version = 0;
   Firmware_UpdateFlag = 0;
   Firmware_FlashAdress = 0;
@@ -61,6 +64,11 @@ void host_NodeInit()
 
 
   ack_status = 0;
+}
+
+void host_SetNodeId(uint16_t id)
+{
+  NodeId = id;
 }
 
 int32_t host_IsDownloading()
@@ -222,13 +230,14 @@ void canDispatch(Message *m)
   uint16_t cob_id = UNS16_LE(m->cob_id);
 
   Message msg = Message_Initializer;
-  uint16_t nodeid = cob_id&0x7f;
+//  uint16_t nodeid = cob_id&0x7f;
 
-  if (cob_id == 0x80)
-  {
-    ReceivedNewid(m->data[0]);
-    return;
-  }
+//  if (cob_id == 0x80)
+//  {
+//    ReceivedNewid(m->data[0]);
+//    return;
+//  }
+  if (NodeId != (cob_id&0x7f)) return;
 
   switch(cob_id >> 7)
   {
@@ -243,11 +252,11 @@ void canDispatch(Message *m)
       }
       if ((m->data[0] == 0x60) || (m->data[0] == 0x30))
       {
-        downloading(0x00, nodeid);
+        downloading(0x00, NodeId);
       }
       else if (m->data[0] == 0x20)
       {
-        downloading(0x10, nodeid);
+        downloading(0x10, NodeId);
       }
       break;
     case FRAME_UPLOADd:
@@ -261,7 +270,7 @@ void canDispatch(Message *m)
 
       if (m->data[0] == 0x41)
       {
-        msg.cob_id = ((uint16_t)FRAME_UPLOADh << 7) + nodeid;
+        msg.cob_id = ((uint16_t)FRAME_UPLOADh << 7) + NodeId;
         msg.len = 8;
         msg.data[0] = 0x60;
 
@@ -272,7 +281,7 @@ void canDispatch(Message *m)
         memcpy(&upload_buf[uploaded_len], &m->data[1], 7);
         uploaded_len += 7;
 
-        msg.cob_id = ((uint16_t)FRAME_UPLOADh << 7) + nodeid;
+        msg.cob_id = ((uint16_t)FRAME_UPLOADh << 7) + NodeId;
         msg.len = 8;
         msg.data[0] = 0x70 - m->data[0];
 
@@ -345,7 +354,6 @@ void rx_ack(Message *m)
   switch (cmdword)
   {
     case CMD_READ_INFO:
-      ack_status |= ACK_READ_BIT;
       switch (m->data[1]) /* option */
       {
         case INFO_FW_VERSION:
@@ -361,6 +369,7 @@ void rx_ack(Message *m)
           memcpy(&Firmware_FlashByteNbr, &m->data[2], 4);
           break;
       }
+      ack_status |= ACK_READ_BIT;
       break;
     case CMD_WRITE_INFO:
       if (m->data[2] == 1)
